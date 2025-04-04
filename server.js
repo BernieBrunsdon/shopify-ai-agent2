@@ -41,18 +41,27 @@ app.use((req, res, next) => {
     next();
 });
 
-// Error handling middleware
-app.use((err, req, res, next) => {
-    console.error('Error:', err);
-    res.status(500).json({ 
-        error: 'Internal Server Error',
-        message: process.env.NODE_ENV === 'development' ? err.message : 'Something went wrong'
+// Root path handler
+app.get('/', (req, res) => {
+    res.json({
+        status: 'Server is running',
+        endpoints: {
+            health: '/health',
+            products: '/api/products'
+        },
+        environment: process.env.NODE_ENV,
+        shopifyConfigured: !!(process.env.VITE_SHOPIFY_STORE && process.env.VITE_SHOPIFY_CLIENT_SECRET)
     });
 });
 
 // Health check endpoint
 app.get('/health', (req, res) => {
-    res.json({ status: 'ok', timestamp: new Date().toISOString() });
+    res.json({ 
+        status: 'ok', 
+        timestamp: new Date().toISOString(),
+        environment: process.env.NODE_ENV,
+        shopifyConfigured: !!(process.env.VITE_SHOPIFY_STORE && process.env.VITE_SHOPIFY_CLIENT_SECRET)
+    });
 });
 
 // Proxy endpoint for Shopify products
@@ -67,6 +76,7 @@ app.get('/api/products', async (req, res) => {
         console.log('- Shop Domain:', shopDomain ? 'Set' : 'Missing');
         console.log('- Access Token:', accessToken ? 'Set' : 'Missing');
         console.log('- NODE_ENV:', process.env.NODE_ENV);
+        console.log('- Frontend URL:', process.env.VITE_FRONTEND_URL);
 
         if (!shopDomain || !accessToken) {
             throw new Error('Shopify credentials are not properly configured');
@@ -99,7 +109,13 @@ app.get('/api/products', async (req, res) => {
         res.status(500).json({ 
             error: 'Failed to fetch products',
             message: error.message,
-            stack: process.env.NODE_ENV === 'development' ? error.stack : undefined
+            stack: process.env.NODE_ENV === 'development' ? error.stack : undefined,
+            environmentCheck: {
+                shopDomain: !!process.env.VITE_SHOPIFY_STORE,
+                accessToken: !!process.env.VITE_SHOPIFY_CLIENT_SECRET,
+                nodeEnv: process.env.NODE_ENV,
+                frontendUrl: process.env.VITE_FRONTEND_URL
+            }
         });
     }
 });
@@ -108,4 +124,8 @@ app.listen(port, () => {
     console.log(`Server running on port ${port}`);
     console.log('Environment:', process.env.NODE_ENV || 'development');
     console.log('Allowed origins:', allowedOrigins);
+    console.log('Environment variables check:');
+    console.log('- Shop Domain:', process.env.VITE_SHOPIFY_STORE ? 'Set' : 'Missing');
+    console.log('- Access Token:', process.env.VITE_SHOPIFY_CLIENT_SECRET ? 'Set' : 'Missing');
+    console.log('- Frontend URL:', process.env.VITE_FRONTEND_URL);
 }); 
