@@ -1,12 +1,7 @@
 import express from 'express';
 import cors from 'cors';
 import fetch from 'node-fetch';
-import { fileURLToPath } from 'url';
-import { dirname } from 'path';
 import dotenv from 'dotenv';
-
-const __filename = fileURLToPath(import.meta.url);
-const __dirname = dirname(__filename);
 
 // Load environment variables
 dotenv.config();
@@ -14,57 +9,23 @@ dotenv.config();
 const app = express();
 const port = process.env.PORT || 3000;
 
-// Enable CORS
-const allowedOrigins = [
-    'http://localhost:5173',
-    'https://shopify-ai-agent-frontend.onrender.com',
-    process.env.VITE_FRONTEND_URL
-].filter(Boolean);
+// Middleware
+app.use(cors());
+app.use(express.json());
 
-app.use(cors({
-    origin: function(origin, callback) {
-        // Allow requests with no origin (like mobile apps or curl requests)
-        if (!origin) return callback(null, true);
-        
-        if (allowedOrigins.indexOf(origin) === -1) {
-            const msg = 'The CORS policy for this site does not allow access from the specified Origin.';
-            return callback(new Error(msg), false);
-        }
-        return callback(null, true);
-    },
-    credentials: true
-}));
-
-// Add request logging middleware
-app.use((req, res, next) => {
-    console.log(`${new Date().toISOString()} - ${req.method} ${req.url}`);
-    next();
-});
-
-// Root path handler
+// Root endpoint
 app.get('/', (req, res) => {
-    res.json({
-        status: 'Server is running',
-        endpoints: {
-            health: '/health',
-            products: '/api/products'
-        },
-        environment: process.env.NODE_ENV,
-        shopifyConfigured: !!(process.env.VITE_SHOPIFY_STORE && process.env.VITE_SHOPIFY_CLIENT_SECRET)
-    });
-});
-
-// Health check endpoint
-app.get('/health', (req, res) => {
     res.json({ 
-        status: 'ok', 
-        timestamp: new Date().toISOString(),
-        environment: process.env.NODE_ENV,
-        shopifyConfigured: !!(process.env.VITE_SHOPIFY_STORE && process.env.VITE_SHOPIFY_CLIENT_SECRET)
+        message: 'Server is running',
+        environment: {
+            shopDomain: process.env.VITE_SHOPIFY_STORE,
+            accessTokenPresent: !!process.env.VITE_SHOPIFY_CLIENT_SECRET,
+            nodeEnv: process.env.NODE_ENV
+        }
     });
 });
 
-// Proxy endpoint for Shopify products
+// Products endpoint
 app.get('/api/products', async (req, res) => {
     try {
         const query = req.query.query || '';
@@ -123,12 +84,9 @@ app.get('/api/products', async (req, res) => {
     }
 });
 
+// Start the server
 app.listen(port, () => {
     console.log(`Server running on port ${port}`);
-    console.log('Environment:', process.env.NODE_ENV || 'development');
-    console.log('Allowed origins:', allowedOrigins);
-    console.log('Environment variables check:');
-    console.log('- Shop Domain:', process.env.VITE_SHOPIFY_STORE ? 'Set' : 'Missing');
-    console.log('- Access Token:', process.env.VITE_SHOPIFY_CLIENT_SECRET ? 'Set' : 'Missing');
-    console.log('- Frontend URL:', process.env.VITE_FRONTEND_URL);
+}).on('error', (err) => {
+    console.error('Server error:', err);
 }); 
