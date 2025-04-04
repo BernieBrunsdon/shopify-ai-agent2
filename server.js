@@ -17,16 +17,20 @@ const port = process.env.PORT || 3000;
 // Enable CORS
 const allowedOrigins = [
     'http://localhost:5173',
+    'https://shopify-ai-agent-frontend.onrender.com',
     process.env.VITE_FRONTEND_URL
 ].filter(Boolean);
 
 app.use(cors({
     origin: function(origin, callback) {
-        if (!origin || allowedOrigins.includes(origin)) {
-            callback(null, true);
-        } else {
-            callback(new Error('Not allowed by CORS'));
+        // Allow requests with no origin (like mobile apps or curl requests)
+        if (!origin) return callback(null, true);
+        
+        if (allowedOrigins.indexOf(origin) === -1) {
+            const msg = 'The CORS policy for this site does not allow access from the specified Origin.';
+            return callback(new Error(msg), false);
         }
+        return callback(null, true);
     },
     credentials: true
 }));
