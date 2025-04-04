@@ -1,18 +1,20 @@
 services:
   - type: web
-    name: shopify-app-backend
+    name: shopify-ai-agent-backend
     env: node
     buildCommand: npm install
     startCommand: node server.js
     envVars:
+      - key: NODE_ENV
+        value: production
+      - key: PORT
+        value: 3000
       - key: VITE_SHOPIFY_STORE
-        sync: false
-      - key: VITE_SHOPIFY_CLIENT_ID
         sync: false
       - key: VITE_SHOPIFY_CLIENT_SECRET
         sync: false
-      - key: PORT
-        value: 3000
+      - key: VITE_FRONTEND_URL
+        sync: false
 
   - type: web
     name: shopify-app-frontend
@@ -24,4 +26,5 @@ services:
         fromService:
           name: shopify-app-backend
           type: web
+          property: url 
           property: url 
