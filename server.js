@@ -73,16 +73,20 @@ app.get('/api/products', async (req, res) => {
         const apiVersion = '2024-04';
 
         console.log('Environment variables check:');
-        console.log('- Shop Domain:', shopDomain ? 'Set' : 'Missing');
-        console.log('- Access Token:', accessToken ? 'Set' : 'Missing');
+        console.log('- Shop Domain:', shopDomain ? `Set (${shopDomain})` : 'Missing');
+        console.log('- Access Token:', accessToken ? 'Set (starts with: ' + accessToken.substring(0, 4) + '...)' : 'Missing');
         console.log('- NODE_ENV:', process.env.NODE_ENV);
-        console.log('- Frontend URL:', process.env.VITE_FRONTEND_URL);
 
         if (!shopDomain || !accessToken) {
             throw new Error('Shopify credentials are not properly configured');
         }
 
-        const url = `https://${shopDomain}/admin/api/${apiVersion}/products.json?title=${encodeURIComponent(query)}`;
+        // Ensure the shop domain is properly formatted
+        const formattedShopDomain = shopDomain.includes('https://') 
+            ? shopDomain.replace('https://', '') 
+            : shopDomain;
+
+        const url = `https://${formattedShopDomain}/admin/api/${apiVersion}/products.json?title=${encodeURIComponent(query)}`;
         console.log('Attempting to fetch from URL:', url);
 
         const response = await fetch(url, {
@@ -111,10 +115,9 @@ app.get('/api/products', async (req, res) => {
             message: error.message,
             stack: process.env.NODE_ENV === 'development' ? error.stack : undefined,
             environmentCheck: {
-                shopDomain: !!process.env.VITE_SHOPIFY_STORE,
-                accessToken: !!process.env.VITE_SHOPIFY_CLIENT_SECRET,
-                nodeEnv: process.env.NODE_ENV,
-                frontendUrl: process.env.VITE_FRONTEND_URL
+                shopDomain: process.env.VITE_SHOPIFY_STORE,
+                accessTokenPresent: !!process.env.VITE_SHOPIFY_CLIENT_SECRET,
+                nodeEnv: process.env.NODE_ENV
             }
         });
     }
