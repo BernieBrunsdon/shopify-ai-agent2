@@ -5,6 +5,7 @@ node_modules/
 
 # Testing
 coverage/
+src/pythagora-core
 
 # Production
 build/
