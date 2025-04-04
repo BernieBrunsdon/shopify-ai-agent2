@@ -63,34 +63,43 @@ app.get('/api/products', async (req, res) => {
         const accessToken = process.env.VITE_SHOPIFY_CLIENT_SECRET;
         const apiVersion = '2024-04';
 
+        console.log('Environment variables check:');
+        console.log('- Shop Domain:', shopDomain ? 'Set' : 'Missing');
+        console.log('- Access Token:', accessToken ? 'Set' : 'Missing');
+        console.log('- NODE_ENV:', process.env.NODE_ENV);
+
         if (!shopDomain || !accessToken) {
             throw new Error('Shopify credentials are not properly configured');
         }
 
-        console.log(`Fetching products from ${shopDomain} with query: ${query}`);
+        const url = `https://${shopDomain}/admin/api/${apiVersion}/products.json?title=${encodeURIComponent(query)}`;
+        console.log('Attempting to fetch from URL:', url);
 
-        const response = await fetch(
-            `https://${shopDomain}/admin/api/${apiVersion}/products.json?title=${encodeURIComponent(query)}`,
-            {
-                headers: {
-                    'X-Shopify-Access-Token': accessToken,
-                    'Content-Type': 'application/json'
-                }
+        const response = await fetch(url, {
+            headers: {
+                'X-Shopify-Access-Token': accessToken,
+                'Content-Type': 'application/json'
             }
-        );
+        });
 
+        console.log('Shopify API Response Status:', response.status);
+        
         if (!response.ok) {
             const errorData = await response.json().catch(() => ({}));
+            console.error('Shopify API Error Response:', errorData);
             throw new Error(`Shopify API error: ${response.status} - ${JSON.stringify(errorData)}`);
         }
 
         const data = await response.json();
+        console.log('Successfully fetched products. Count:', data.products?.length || 0);
         res.json(data);
     } catch (error) {
-        console.error('Error fetching products:', error);
+        console.error('Detailed error:', error);
+        console.error('Error stack:', error.stack);
         res.status(500).json({ 
             error: 'Failed to fetch products',
-            message: error.message
+            message: error.message,
+            stack: process.env.NODE_ENV === 'development' ? error.stack : undefined
         });
     }
 });
