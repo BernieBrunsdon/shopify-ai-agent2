@@ -1,0 +1,27 @@
+services:
+  - type: web
+    name: shopify-app-backend
+    env: node
+    buildCommand: npm install
+    startCommand: node server.js
+    envVars:
+      - key: VITE_SHOPIFY_STORE
+        sync: false
+      - key: VITE_SHOPIFY_CLIENT_ID
+        sync: false
+      - key: VITE_SHOPIFY_CLIENT_SECRET
+        sync: false
+      - key: PORT
+        value: 3000
+
+  - type: web
+    name: shopify-app-frontend
+    env: node
+    buildCommand: npm install && npm run build
+    startCommand: npm run preview
+    envVars:
+      - key: VITE_API_URL
+        fromService:
+          name: shopify-app-backend
+          type: web
+          property: url 
